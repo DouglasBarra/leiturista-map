@@ -7,6 +7,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import SideMenu from '../components/SideMenu';
 import { MapMarker } from '../components/MapMarker';
 import { fetchRoute } from '../services/routeService';
+import { reverseGeocode } from '../services/reverseGeocode';
 
 // Fix para o ícone do marcador
 const icon = L.icon({
@@ -28,6 +29,12 @@ export interface Point {
 interface RoutePoint {
   lat: number;
   lng: number;
+}
+
+interface StopPoint {
+  lat: number;
+  lng: number;
+  address: string;
 }
 
 function MapClickHandler({ onMapClick }: { onMapClick: (e: L.LeafletMouseEvent) => void }) {
@@ -56,6 +63,7 @@ export default function Map() {
   const [route, setRoute] = useState<RoutePoint[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stops, setStops] = useState<StopPoint[]>([]);
 
   const handleMapClick = (e: L.LeafletMouseEvent) => {
     const { lat, lng } = e.latlng;
@@ -76,23 +84,37 @@ export default function Map() {
     }
   };
 
-  const calculateRoute = async () => {
-    if (!startPoint || !endPoint) return;
+  
+const calculateRoute = async () => {
+  if (!startPoint || !endPoint) return;
 
-    try {
-      // Usando a API do OpenRouteService
-      const routePoints = await fetchRoute(startPoint, endPoint);
+  try {
+    const routePoints = await fetchRoute(startPoint, endPoint);
 
-      if (routePoints.length === 0) {
-        throw new Error('Nenhum ponto na rota');
-      }
-
-      setRoute(routePoints);
-    } catch (error) {
-      console.error('Erro ao calcular rota:', error);
-      setError(`Não foi possível calcular a rota`);
+    if (routePoints.length === 0) {
+      throw new Error('Nenhum ponto na rota');
     }
-  };
+
+    setRoute(routePoints);
+
+    // Filtra alguns pontos da rota para não fazer requisições demais
+    const selectedPoints = routePoints.filter((_, index) => index % 10 === 0);
+
+    // Faz o reverse geocoding
+    const fetchedStops: StopPoint[] = await Promise.all(
+      selectedPoints.map(async (point) => {
+        const address = await reverseGeocode(point.lat, point.lng);
+        return { ...point, address };
+      })
+    );
+
+    setStops(fetchedStops);
+
+  } catch (error) {
+    console.error('Erro ao calcular rota:', error);
+    setError('Não foi possível calcular a rota');
+  }
+};
 
   const handleCloseError = () => {
     setError(null);
@@ -147,14 +169,24 @@ export default function Map() {
           />
         )}
 
-        {/* {route.length > 0 && ( */}
+        {route.length > 0 && (
           <Polyline
             data-testid="polyline"
             positions={route.map(point => [point.lat, point.lng])}
             color="blue"
             weight={3}
           />
-        {/* )} */}
+        )}
+
+        {stops.map((stop, index) => (
+          <MapMarker
+            key={`stop-${index}`}
+            position={{ lat: stop.lat, lng: stop.lng }}
+            label={`Parada ${index + 1}`}
+            address={stop.address}
+            icon={icon}
+          />
+        ))}
       </MapContainer>
 
       <SideMenu
@@ -165,6 +197,7 @@ export default function Map() {
         onStartPointChange={setStartPoint}
         onEndPointChange={setEndPoint}
         onCalculateRoute={calculateRoute}
+        stops={stops}
       />
 
       <Snackbar

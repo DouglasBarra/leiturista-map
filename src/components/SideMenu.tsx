@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Drawer,
   Box,
@@ -13,6 +13,7 @@ import RouteIcon from '@mui/icons-material/Route';
 
 import AddressAutocomplete from './AddressAutocomplete';
 import SelectedPointsList from './SelectedPointsList';
+import { fetchAddressSuggestions } from '../services/addressService';
 
 interface Point {
   lat: number;
@@ -20,7 +21,7 @@ interface Point {
   address: string;
 }
 
-interface AddressSuggestion {
+export interface AddressSuggestion {
   display_name: string;
   lat: number;
   lon: number;
@@ -35,6 +36,7 @@ interface SideMenuProps {
   onStartPointChange: (point: Point) => void;
   onEndPointChange: (point: Point) => void;
   onCalculateRoute: () => void;
+  stops?: Point[];
 }
 
 const SideMenu = ({
@@ -45,6 +47,7 @@ const SideMenu = ({
   onStartPointChange,
   onEndPointChange,
   onCalculateRoute,
+  stops
 }: SideMenuProps) => {
   const [startAddress, setStartAddress] = useState('');
   const [endAddress, setEndAddress] = useState('');
@@ -54,25 +57,15 @@ const SideMenu = ({
   const [loadingEnd, setLoadingEnd] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAddressSuggestions = async (
-    query: string,
+  const handleFetchSuggestions = async (
+    query: string, 
     setSuggestions: (suggestions: AddressSuggestion[]) => void,
     setLoading: (loading: boolean) => void
   ) => {
-    if (!query) {
-      setSuggestions([]);
-      return;
-    }
-
     setLoading(true);
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query
-        )}&countrycodes=br&limit=5&addressdetails=1`
-      );
-      const data = await response.json();
-      setSuggestions(data);
+      const suggestions = await fetchAddressSuggestions(query);
+      setSuggestions(suggestions);
     } catch (error) {
       console.error('Erro ao buscar sugestões:', error);
       setError('Erro ao buscar endereços. Tente novamente.');
@@ -83,7 +76,7 @@ const SideMenu = ({
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      fetchAddressSuggestions(startAddress, setStartSuggestions, setLoadingStart);
+      handleFetchSuggestions(startAddress, setStartSuggestions, setLoadingStart);
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
@@ -91,7 +84,7 @@ const SideMenu = ({
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      fetchAddressSuggestions(endAddress, setEndSuggestions, setLoadingEnd);
+      handleFetchSuggestions(endAddress, setEndSuggestions, setLoadingEnd);
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
@@ -185,7 +178,11 @@ const SideMenu = ({
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
           Pontos Selecionados
         </Typography>
-        <SelectedPointsList startPoint={startPoint} endPoint={endPoint} />
+        <SelectedPointsList
+          startPoint={startPoint}
+          endPoint={endPoint}
+          stops={stops}
+        />
       </Box>
     </Drawer>
   );

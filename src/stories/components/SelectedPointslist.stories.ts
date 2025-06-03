@@ -23,6 +23,19 @@ const mockEndPoint = {
   address: 'Praia de Copacabana, Rio de Janeiro - RJ',
 };
 
+const mockStops = [
+  {
+    lat: -23.0000,
+    lng: -45.0000,
+    address: 'Parada 1 - São José dos Campos, SP',
+  },
+  {
+    lat: -22.5000,
+    lng: -44.5000,
+    address: 'Parada 2 - Volta Redonda, RJ',
+  },
+];
+
 export const BothPoints: Story = {
   args: {
     startPoint: mockStartPoint,
@@ -48,5 +61,13 @@ export const NoPoints: Story = {
   args: {
     startPoint: null,
     endPoint: null,
+  },
+};
+
+export const WithStops: Story = {
+  args: {
+    startPoint: mockStartPoint,
+    endPoint: mockEndPoint,
+    stops: mockStops,
   },
 };
