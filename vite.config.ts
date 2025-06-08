@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
-    // 👋 add the line below to add jsdom to vite
     environment: 'jsdom',
+    setupFiles: ["./src/setupTests.ts"],
   }
 } as UserConfig)
