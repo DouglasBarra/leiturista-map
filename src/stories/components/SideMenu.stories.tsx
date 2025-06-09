@@ -25,6 +25,19 @@ const mockEndPoint = {
   address: 'Copacabana, Rio de Janeiro - RJ',
 };
 
+const mockStops = [
+  {
+    lat: -23.1234,
+    lng: -46.4321,
+    address: 'Parada 1 - São Caetano do Sul, SP',
+  },
+  {
+    lat: -22.8901,
+    lng: -43.2100,
+    address: 'Parada 2 - Niterói, RJ',
+  },
+];
+
 export const Closed: Story = {
   args: {
     isOpen: false,
@@ -67,6 +80,19 @@ export const OpenWithStartAndEnd: Story = {
     onClose: fn(),
     startPoint: mockStartPoint,
     endPoint: mockEndPoint,
+    onStartPointChange: fn(),
+    onEndPointChange: fn(),
+    onCalculateRoute: fn(),
+  },
+};
+
+export const OpenWithStops: Story = {
+  args: {
+    isOpen: true,
+    onClose: fn(),
+    startPoint: mockStartPoint,
+    endPoint: mockEndPoint,
+    stops: mockStops,
     onStartPointChange: fn(),
     onEndPointChange: fn(),
     onCalculateRoute: fn(),
